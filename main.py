@@ -1,4 +1,11 @@
 import json
+from datetime import date
+from enum import Enum
+
+
+class Status(Enum):
+    AVAILABLE = "в наличии"
+    BORROWED = "выдана"
 
 
 class Book:
@@ -8,7 +15,7 @@ class Book:
         author: str,
         year: int,
         id: int = None,
-        status: str = "в наличии",
+        status: str = Status.AVAILABLE.value,
     ):
         self.id: int = id
         self.title: str = title
@@ -35,7 +42,13 @@ class Book:
     @classmethod
     def from_dict(cls, data):
         """Создание объекта книги из словаря."""
-        return cls(**data)
+        return cls(
+            id=int(data.get("id")),
+            title=data.get("title"),
+            author=data.get("author"),
+            year=int(data.get("year")),
+            status=data.get("status"),
+        )
 
     def __eq__(self, other: "Book"):
         return (self.title, self.author, self.year) == (
@@ -44,10 +57,69 @@ class Book:
             other.year,
         )
 
+    @property
+    def id(self):
+        return self.__id
+
+    @id.setter
+    def id(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError(
+                "ID книги должно быть целым положительным числом."
+            )
+        self.__id = value
+
+    @property
+    def title(self):
+        return self.__title
+
+    @title.setter
+    def title(self, value):
+        if not isinstance(value, str) or value.strip() == "":
+            raise ValueError("Название книги должно быть непустой строкой.")
+        self.__title = value.strip()
+
+    @property
+    def author(self):
+        return self.__author
+
+    @author.setter
+    def author(self, value):
+        if not isinstance(value, str) or value.strip() == "":
+            raise ValueError("Имя автора должно быть непустой строкой.")
+        self.__author = value.strip()
+
+    @property
+    def year(self):
+        return self.__year
+
+    @year.setter
+    def year(self, value):
+        if not isinstance(value, int):
+            raise ValueError("Год издания должен быть целым числом.")
+        current_year = date.today().year
+        if value > current_year:
+            raise ValueError("Год издания не может быть больше текущего года.")
+        self.__year = value
+
+    @property
+    def status(self):
+        return self.__status
+
+    @status.setter
+    def status(self, value):
+        if value not in {s.value for s in Status}:
+            raise ValueError(
+                "Статус книги должен быть одним из: "
+                f"{', '.join(s.value for s in Status)}"
+            )
+        self.__status = value
+
 
 class LibraryManager:
-    def __init__(self, filename: str = "library.json"):
+    def __init__(self, book: Book, filename: str = "library.json"):
         self.filename: str = filename
+        self.book = book
         self.books: dict[str, Book] = {}
         self.load_book()
 
@@ -56,7 +128,8 @@ class LibraryManager:
             with open(self.filename, encoding="utf-8") as file:
                 data = json.load(file)
                 self.books = {
-                    key: Book(**value) for key, value in data.items()
+                    key: self.book.from_dict(value)
+                    for key, value in data.items()
                 }
         except FileNotFoundError:
             print(f"Файла `{self.filename}` не существует.")
@@ -66,8 +139,8 @@ class LibraryManager:
             data = {book.title: book.to_dict() for book in self.books.values()}
             json.dump(data, file, ensure_ascii=False, indent=4)
 
-    def get_book(self, id):
-        return self.books.get(str(id))
+    def get_book(self, id: int):
+        return self._binary_search(list(self.books.values()), id)
 
     def get_books(self):
         yield from self.books.values()
@@ -110,7 +183,9 @@ class LibraryManager:
         field = field.lower()
         return getattr(self, f"_get_book_by_{field}")(query)
 
-    def _binary_search(objs: list[Book], id):
+    def _binary_search(self, objs: list[Book], id: int):
+        if objs[0].id > id or objs[-1].id < id:
+            return None
         left = 0
         right = len(objs)
         while left < right:
@@ -122,10 +197,7 @@ class LibraryManager:
                 right = middle
             else:
                 return obj
-        return objs[left] if objs[left].id == id else []
-
-    def _get_book_by_id(self, id: int):
-        return self._binary_search(list(self.books.values()), id)
+        return objs[left] if objs[left].id == id else None
 
     def _get_book_by_author(self, author: str):
         output = []
@@ -137,11 +209,22 @@ class LibraryManager:
     def _get_book_by_title(self, title: str):
         return [self.books.get(title)]
 
+    def _get_book_by_year(self, year: str):
+        output = []
+        for book in self.books.values():
+            if book.year == year:
+                output.append(book)
+        return output
+
 
 if __name__ == "__main__":
-    library = LibraryManager()
-    for book in library.get_books():
-        print(book)
-    print(library.search_book("author", "Джоан Роулинг"))
-    library.add_book("Гарри Поттер и Дары Смерти", "Джоан Роулинг", 2007)
-    print(library.search_book("author", "Джоан Роулинг"))
+    library = LibraryManager(Book)
+    book = Book(
+        title="Преступление и наказание",
+        author="Федор Достоевский",
+        year=1866,
+        id=1,
+    )
+    print(book.status)
+    book.status = Status.BORROWED.value
+    print(book.status)
