@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from books import Book
 
@@ -6,44 +7,51 @@ from books import Book
 class LibraryManager:
     def __init__(self, book: Book, filename: str = "library.json"):
         self.filename: str = filename
-        self.book = book
-        self.books: dict[str, Book] = {}
-        self.load_book()
+        self.file = self.get_file()
+        self.book = book  # TODO Указать правильно аннотацию класса
+        self.books: dict[str, Book] = self.load_book()
 
-    def load_book(self):
-        try:
-            with open(self.filename, encoding="utf-8") as file:
-                data = json.load(file)
-                self.books = {
-                    key: self.book.from_dict(value)
-                    for key, value in data.items()
-                }
-        except FileNotFoundError:
-            print(f"Файла `{self.filename}` не существует.")
+    def get_file(self) -> Path:
+        file = Path(__file__).parent / self.filename
+        if not file.exists():
+            raise FileNotFoundError(f"Файла `{self.filename}` не существует.")
+        return file
+
+    def load_book(self) -> dict[str, Book]:
+        # TODOОбработать ошибку JSONDecodeError
+        with self.file.open(encoding="utf-8") as f:
+            data = json.load(f)
+            books = {
+                int(key): self.book.from_dict(value)
+                for key, value in data.items()
+            }
+        return books
 
     def save_books(self):
-        with open(self.filename, "w", encoding="utf-8") as file:
-            data = {book.title: book.to_dict() for book in self.books.values()}
+        with self.file.open("w", encoding="utf-8") as file:
+            data = {book.id: book.to_dict() for book in self.books.values()}
             json.dump(data, file, ensure_ascii=False, indent=4)
 
     def get_book(self, id: int):
-        return self._binary_search(list(self.books.values()), id)
+        return self.books.get(id)
 
     def get_books(self):
         yield from self.books.values()
 
     def add_book(self, title: str, author: str, year: int):
-        book = Book(title=title, author=author, year=year)
-        if book.title in self.books and book == self.books[book.title]:
-            print(f"Книга `{book.title}` уже существует.")
-            return
+        # TODO Придумать как хранить состояние id в классе
         next_id = max(book.id for book in self.books.values()) + 1
-        book.id = next_id
+        book = Book(title=title, author=author, year=year, id=next_id)
+        for bk in self.books.values():
+            if bk == book:
+                print(f"Книга `{book.title}` уже существует.")
+                return
         self.books[book.id] = book
         self.save_books()
         return book
 
     def delete_book(self, id: int):
+        # TODO Исправить удаление по id
         try:
             current_book = self.books[id]
         except KeyError:
@@ -54,6 +62,7 @@ class LibraryManager:
             print(f"Книга `{current_book.title}` удалена.")
 
     def update_book_status(self, id: int, status: str):
+        # TODO Исправить обновление по id
         try:
             current_book = self.books[id]
         except KeyError:
@@ -70,22 +79,6 @@ class LibraryManager:
         field = field.lower()
         return getattr(self, f"_get_book_by_{field}")(query)
 
-    def _binary_search(self, objs: list[Book], id: int):
-        if objs[0].id > id or objs[-1].id < id:
-            return None
-        left = 0
-        right = len(objs)
-        while left < right:
-            middle = (left + right) // 2
-            obj = objs[middle]
-            if id > obj.id:
-                left = middle + 1
-            elif id < obj.id:
-                right = middle
-            else:
-                return obj
-        return objs[left] if objs[left].id == id else None
-
     def _get_book_by_author(self, author: str):
         output = []
         for book in self.books.values():
@@ -94,7 +87,11 @@ class LibraryManager:
         return output
 
     def _get_book_by_title(self, title: str):
-        return [self.books.get(title)]
+        output = []
+        for book in self.books.values():
+            if book.title == title:
+                output.append(book)
+        return output
 
     def _get_book_by_year(self, year: str):
         output = []
