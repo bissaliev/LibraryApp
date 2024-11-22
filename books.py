@@ -3,8 +3,8 @@ from enum import Enum
 
 
 class Status(Enum):
-    AVAILABLE = "в наличии"
-    BORROWED = "выдана"
+    AVAILABLE: str = "в наличии"
+    BORROWED: str = "выдана"
 
 
 class Book:
@@ -22,13 +22,13 @@ class Book:
         self.year: int = year
         self.status: str = status
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.to_dict())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.title})"
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, str | int]:
         """Преобразование объекта книги в словарь."""
         return {
             "id": self.id,
@@ -39,7 +39,7 @@ class Book:
         }
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: dict[str : str | int]) -> "Book":
         """Создание объекта книги из словаря."""
         return cls(
             id=int(data.get("id")),
@@ -49,7 +49,7 @@ class Book:
             status=data.get("status"),
         )
 
-    def __eq__(self, other: "Book"):
+    def __eq__(self, other: "Book") -> bool:
         return (self.title, self.author, self.year) == (
             other.title,
             other.author,
@@ -57,11 +57,11 @@ class Book:
         )
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self.__id
 
     @id.setter
-    def id(self, value):
+    def id(self, value: int) -> None:
         if not isinstance(value, int) or value < 1:
             raise ValueError(
                 "ID книги должно быть целым положительным числом."
@@ -69,31 +69,31 @@ class Book:
         self.__id = value
 
     @property
-    def title(self):
+    def title(self) -> str:
         return self.__title
 
     @title.setter
-    def title(self, value):
+    def title(self, value: str) -> None:
         if not isinstance(value, str) or value.strip() == "":
             raise ValueError("Название книги должно быть непустой строкой.")
-        self.__title = value.strip()
+        self.__title = value.strip().capitalize()
 
     @property
-    def author(self):
+    def author(self) -> str:
         return self.__author
 
     @author.setter
-    def author(self, value):
+    def author(self, value: str) -> None:
         if not isinstance(value, str) or value.strip() == "":
             raise ValueError("Имя автора должно быть непустой строкой.")
-        self.__author = value.strip()
+        self.__author = value.strip().title()
 
     @property
-    def year(self):
+    def year(self) -> int:
         return self.__year
 
     @year.setter
-    def year(self, value):
+    def year(self, value: int) -> None:
         if not isinstance(value, int):
             raise ValueError("Год издания должен быть целым числом.")
         current_year = date.today().year
@@ -102,14 +102,14 @@ class Book:
         self.__year = value
 
     @property
-    def status(self):
+    def status(self) -> str:
         return self.__status
 
     @status.setter
-    def status(self, value):
+    def status(self, value: str) -> None:
         if value not in {s.value for s in Status}:
             raise ValueError(
                 "Статус книги должен быть одним из: "
                 f"{', '.join(s.value for s in Status)}"
             )
-        self.__status = value
+        self.__status = value.strip().lower()
