@@ -1,101 +1,71 @@
-import json
-from pathlib import Path
+from typing import Type
 
 from books import Book
+from filemanagers import FileManager
 
 
 class LibraryManager:
-    def __init__(self, book: Book, filename: str = "library.json"):
-        self.filename: str = filename
-        self.file = self.get_file()
-        self.book = book  # TODO Указать правильно аннотацию класса
-        self.books: dict[str, Book] = self.load_book()
+    def __init__(self, book_class: Type[Book], file_manager: FileManager):
+        self.file_manager = file_manager
+        self.book_class: Type[Book] = book_class
+        self.books: dict[int, Book] = self._load_book()
+        self.next_id: int = self.get_next_id()
 
-    def get_file(self) -> Path:
-        file = Path(__file__).parent / self.filename
-        if not file.exists():
-            raise FileNotFoundError(f"Файла `{self.filename}` не существует.")
-        return file
-
-    def load_book(self) -> dict[str, Book]:
-        # TODOОбработать ошибку JSONDecodeError
-        with self.file.open(encoding="utf-8") as f:
-            data = json.load(f)
-            books = {
-                int(key): self.book.from_dict(value)
-                for key, value in data.items()
-            }
+    def _load_book(self) -> dict[int, Book]:
+        data = self.file_manager.load()
+        books = {item["id"]: self.book_class.from_dict(item) for item in data}
         return books
 
-    def save_books(self):
-        with self.file.open("w", encoding="utf-8") as file:
-            data = {book.id: book.to_dict() for book in self.books.values()}
-            json.dump(data, file, ensure_ascii=False, indent=4)
+    def get_next_id(self) -> int:
+        if self.books:
+            return max(int(id) for id in self.books) + 1
+        return 1
 
-    def get_book(self, id: int):
-        return self.books.get(id)
+    def _save_books(self) -> None:
+        data = [book.to_dict() for book in self.books.values()]
+        self.file_manager.save(data)
+
+    def get_book(self, id: int) -> Book | None:
+        return self.books.get(id, None)
 
     def get_books(self):
         yield from self.books.values()
 
-    def add_book(self, title: str, author: str, year: int):
-        # TODO Придумать как хранить состояние id в классе
-        next_id = max(book.id for book in self.books.values()) + 1
-        book = Book(title=title, author=author, year=year, id=next_id)
-        for bk in self.books.values():
-            if bk == book:
-                print(f"Книга `{book.title}` уже существует.")
-                return
-        self.books[book.id] = book
-        self.save_books()
-        return book
+    def add_book(self, title: str, author: str, year: int) -> Book:
+        new_book = Book(title=title, author=author, year=year, id=self.next_id)
+        for book in self.books.values():
+            if book == new_book:
+                raise ValueError(f"Книга `{new_book.title}` уже существует.")
+        self.books[new_book.id] = new_book
+        self._save_books()
+        self.next_id += 1
+        return new_book
 
-    def delete_book(self, id: int):
-        # TODO Исправить удаление по id
+    def delete_book(self, id: int) -> Book | None:
         try:
-            current_book = self.books[id]
+            remote_book = self.books.pop(id)
         except KeyError:
-            print(f"Книги с id `{id}` не существует.")
+            return None
         else:
-            del self.books[id]
-            self.save_books()
-            print(f"Книга `{current_book.title}` удалена.")
+            self._save_books()
+            return remote_book
 
-    def update_book_status(self, id: int, status: str):
-        # TODO Исправить обновление по id
+    def update_book_status(self, id: int, status: str) -> Book | None:
         try:
-            current_book = self.books[id]
+            updated_book = self.books[id]
         except KeyError:
-            print(f"Книга `{current_book.title}` удалена.")
+            return None
         else:
-            current_book.status = status
-            self.save_books()
-            print(
-                f"Статус книги `{current_book.title}` изменён на `{status}`."
-            )
+            updated_book.status = status
+            self._save_books()
+            return updated_book
 
-    def search_book(self, field: str, query: str):
-        """Поиск книг по полям title, author, year."""
+    def search_book(self, field, query):
         field = field.lower()
-        return getattr(self, f"_get_book_by_{field}")(query)
-
-    def _get_book_by_author(self, author: str):
+        query = str(query).lower()
         output = []
         for book in self.books.values():
-            if book.author == author:
-                output.append(book)
-        return output
-
-    def _get_book_by_title(self, title: str):
-        output = []
-        for book in self.books.values():
-            if book.title == title:
-                output.append(book)
-        return output
-
-    def _get_book_by_year(self, year: str):
-        output = []
-        for book in self.books.values():
-            if book.year == year:
+            value = str(getattr(book, field)).lower()
+            if (value == query) or (query in value):
                 output.append(book)
         return output
