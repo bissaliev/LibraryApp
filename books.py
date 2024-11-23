@@ -23,7 +23,13 @@ class Book:
         self.status: str = status
 
     def __str__(self) -> str:
-        return str(self.to_dict())
+        return (
+            f"id: {self.id}\n"
+            f"title: {self.title}\n"
+            f"author: {self.author}\n"
+            f"year: {self.year}\n"
+            f"status: {self.status}"
+        )
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.title})"
@@ -42,14 +48,15 @@ class Book:
     def from_dict(cls, data: dict[str : str | int]) -> "Book":
         """Создание объекта книги из словаря."""
         return cls(
-            id=int(data.get("id")),
+            id=data.get("id"),
             title=data.get("title"),
             author=data.get("author"),
-            year=int(data.get("year")),
+            year=data.get("year"),
             status=data.get("status"),
         )
 
     def __eq__(self, other: "Book") -> bool:
+        # TODO Доработать сравнение
         return (self.title, self.author, self.year) == (
             other.title,
             other.author,
@@ -76,7 +83,7 @@ class Book:
     def title(self, value: str) -> None:
         if not isinstance(value, str) or value.strip() == "":
             raise ValueError("Название книги должно быть непустой строкой.")
-        self.__title = value.strip().capitalize()
+        self.__title = value.strip()
 
     @property
     def author(self) -> str:
