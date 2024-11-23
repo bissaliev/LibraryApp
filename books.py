@@ -35,7 +35,7 @@ class Book:
         return f"{self.__class__.__name__}({self.title})"
 
     def to_dict(self) -> dict[str, str | int]:
-        """Преобразование объекта книги в словарь."""
+        """Преобразование объекта в словарь."""
         return {
             "id": self.id,
             "title": self.title,
@@ -46,7 +46,7 @@ class Book:
 
     @classmethod
     def from_dict(cls, data: dict[str : str | int]) -> "Book":
-        """Создание объекта книги из словаря."""
+        """Создание объекта из словаря."""
         return cls(
             id=data.get("id"),
             title=data.get("title"),
@@ -56,11 +56,10 @@ class Book:
         )
 
     def __eq__(self, other: "Book") -> bool:
-        # TODO Доработать сравнение
-        return (self.title, self.author, self.year) == (
-            other.title,
-            other.author,
-            other.year,
+        return (
+            self.title.lower() == other.title.lower()
+            and self.author.lower() == other.author.lower()
+            and self.year == other.year
         )
 
     @property
@@ -81,9 +80,7 @@ class Book:
 
     @title.setter
     def title(self, value: str) -> None:
-        if not isinstance(value, str) or value.strip() == "":
-            raise ValueError("Название книги должно быть непустой строкой.")
-        self.__title = value.strip()
+        self.__title = self.validate_non_empty_string("title", value)
 
     @property
     def author(self) -> str:
@@ -91,9 +88,7 @@ class Book:
 
     @author.setter
     def author(self, value: str) -> None:
-        if not isinstance(value, str) or value.strip() == "":
-            raise ValueError("Имя автора должно быть непустой строкой.")
-        self.__author = value.strip().title()
+        self.__author = self.validate_non_empty_string("author", value)
 
     @property
     def year(self) -> int:
@@ -120,3 +115,11 @@ class Book:
                 f"{', '.join(s.value for s in Status)}"
             )
         self.__status = value.strip().lower()
+
+    @staticmethod
+    def validate_non_empty_string(field_name, value):
+        if not isinstance(value, str) or value.strip() == "":
+            raise ValueError(
+                f"Поле {field_name} должно быть непустой строкой."
+            )
+        return value.strip()
