@@ -21,6 +21,10 @@ class JsonFileManager(FileManager):
     def load(self) -> list[dict[str, str | int]]:
         try:
             with self.filepath.open(encoding="utf-8") as file:
+                first_char = file.read(1)
+                if not first_char:
+                    return []
+                file.seek(0)
                 data = json.load(file)
         except FileNotFoundError as e:
             raise FileNotFoundError(f"Файл {self.filepath} не найден!") from e
