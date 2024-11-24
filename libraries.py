@@ -23,14 +23,26 @@ class LibraryManager:
         data = [book.to_dict() for book in self._books.values()]
         self.file_manager.save(data)
 
-    def get_book(self, id: int) -> Book | None:
-        return self._books.get(id, None)
+    def get_book(self, id: int) -> Book:
+        try:
+            book = self._books[id]
+        except KeyError as error:
+            raise ValueError(f"Книга с id `{id}` не найдена.") from error
+        return book
 
     def get_books(self) -> list[Book]:
         return [book for book in self._books.values()]
 
     def add_book(self, title: str, author: str, year: int) -> Book:
-        new_book = Book(title=title, author=author, year=year, id=self.next_id)
+        try:
+            new_book = self.book_class(
+                title=title,
+                author=author,
+                year=year,
+                id=self.next_id,
+            )
+        except ValueError as error:
+            raise ValueError(str(error)) from error
         for book in self._books.values():
             if book == new_book:
                 raise ValueError(f"Книга `{new_book.title}` уже существует.")
@@ -39,20 +51,20 @@ class LibraryManager:
         self.next_id += 1
         return new_book
 
-    def delete_book(self, id: int) -> Book | None:
+    def delete_book(self, id: int) -> Book:
         try:
             remote_book = self._books.pop(id)
-        except KeyError:
-            return None
+        except KeyError as error:
+            raise ValueError(f"Книга с id `{id}` не найдена.") from error
         else:
             self._save_books()
             return remote_book
 
-    def update_book_status(self, id: int, status: str) -> Book | None:
+    def update_book_status(self, id: int, status: str) -> Book:
         try:
             updated_book = self._books[id]
-        except KeyError:
-            return None
+        except KeyError as error:
+            raise ValueError(f"Книга с id `{id}` не найдена.") from error
         else:
             updated_book.status = status
             self._save_books()
