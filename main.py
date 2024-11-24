@@ -25,6 +25,8 @@ def display_menu():
 def display_books(library: LibraryManager):
     """Отображение всех книг."""
     books = library.get_books()
+    if not books:
+        print("\nВ библиотеке пока нет книг.\n")
     print("\n\n".join(str(book) for book in books), end="\n\n")
 
 
@@ -75,6 +77,7 @@ def delete_book(library: LibraryManager):
 
 
 def update_status_of_book(library: LibraryManager):
+    """Обновление статуса книги."""
     try:
         book_id = int(input("Введите id книги, которую хотите изменить: "))
     except ValueError:
@@ -104,6 +107,7 @@ def update_status_of_book(library: LibraryManager):
 
 
 def search_book(library: LibraryManager):
+    """Поиск книг по названию, автору и году."""
     options = {"1": "title", "2": "author", "3": "year"}
     print("\n".join(f"{num}. {option}" for num, option in options.items()))
     option = input("\nВведите число поля по которому нужно найти книгу: ")
