@@ -1,3 +1,4 @@
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from enum import Enum
 
@@ -9,24 +10,36 @@ class Status(Enum):
     BORROWED: str = "выдана"
 
 
+@dataclass
 class Book:
-    """Класс книг."""
+    id: int = field(compare=False)
+    title: str
+    author: str
+    year: int
+    status: str = field(compare=False, default=Status.AVAILABLE.value)
 
-    def __init__(
-        self,
-        title: str,
-        author: str,
-        year: int,
-        id: int = None,
-        status: str = Status.AVAILABLE.value,
-    ):
-        self.id: int = id
-        self.title: str = title
-        self.author: str = author
-        self.year: int = year
-        self.status: str = status
+    def __post_init__(self):
+        if not isinstance(self.id, int) or self.id < 1:
+            raise ValueError(
+                "ID книги должно быть целым положительным числом."
+            )
 
-    def __str__(self) -> str:
+        self.title = self.validate_non_empty_string("title", self.title)
+
+        self.author = self.validate_non_empty_string("author", self.author)
+
+        if not isinstance(self.year, int) or self.year > date.today().year:
+            raise ValueError(
+                "Год издания должен быть целым числом и не больше текущего года."
+            )
+
+        if self.status not in (s.value for s in Status):
+            raise ValueError(
+                "Статус книги должен быть одним из: "
+                f"{', '.join(s.value for s in Status)}"
+            )
+
+    def __str__(self):
         return (
             f"id: {self.id}\n"
             f"title: {self.title}\n"
@@ -35,103 +48,20 @@ class Book:
             f"status: {self.status}"
         )
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.title})"
-
-    def to_dict(self) -> dict[str, str | int]:
+    def to_dict(self):
         """Преобразование объекта в словарь."""
-        return {
-            "id": self.id,
-            "title": self.title,
-            "author": self.author,
-            "year": self.year,
-            "status": self.status,
-        }
+        return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str : str | int]) -> "Book":
+    def from_dict(cls, data: dict[str, str | int]):
         """Классовый метод для создания объекта из словаря."""
         return cls(
-            id=data.get("id"),
-            title=data.get("title"),
-            author=data.get("author"),
-            year=data.get("year"),
+            id=data["id"],
+            title=data["title"],
+            author=data["author"],
+            year=data["year"],
             status=data.get("status", Status.AVAILABLE.value),
         )
-
-    def __eq__(self, other: object) -> bool:
-        """Метод сравнения объектов по полям title, author, year."""
-        if not isinstance(other, Book):
-            return NotImplemented
-        return (
-            self.title.lower() == other.title.lower()
-            and self.author.lower() == other.author.lower()
-            and self.year == other.year
-        )
-
-    @property
-    def id(self) -> int:
-        """Геттер для атрибута id."""
-        return self.__id
-
-    @id.setter
-    def id(self, value: int) -> None:
-        """Сеттер для атрибута id."""
-        if not isinstance(value, int) or value < 1:
-            raise ValueError(
-                "ID книги должно быть целым положительным числом."
-            )
-        self.__id = value
-
-    @property
-    def title(self) -> str:
-        """Геттер для атрибута title."""
-        return self.__title
-
-    @title.setter
-    def title(self, value: str) -> None:
-        """Сеттер для атрибута title."""
-        self.__title = self.validate_non_empty_string("title", value)
-
-    @property
-    def author(self) -> str:
-        """Геттер для атрибута author."""
-        return self.__author
-
-    @author.setter
-    def author(self, value: str) -> None:
-        """Сеттер для атрибута author."""
-        self.__author = self.validate_non_empty_string("author", value)
-
-    @property
-    def year(self) -> int:
-        """Геттер для атрибута year."""
-        return self.__year
-
-    @year.setter
-    def year(self, value: int) -> None:
-        """Сеттер для атрибута year."""
-        if not isinstance(value, int):
-            raise ValueError("Год издания должен быть целым числом.")
-        current_year = date.today().year
-        if value > current_year:
-            raise ValueError("Год издания не может быть больше текущего года.")
-        self.__year = value
-
-    @property
-    def status(self) -> str:
-        """Геттер для атрибута status."""
-        return self.__status
-
-    @status.setter
-    def status(self, value: str) -> None:
-        """Сеттер для атрибута status."""
-        if value not in {s.value for s in Status}:
-            raise ValueError(
-                "Статус книги должен быть одним из: "
-                f"{', '.join(s.value for s in Status)}"
-            )
-        self.__status = value.strip().lower()
 
     @staticmethod
     def validate_non_empty_string(field_name: str, value: str) -> str:
