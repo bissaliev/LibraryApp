@@ -19,20 +19,25 @@ class Book:
     status: str = field(compare=False, default=Status.AVAILABLE.value)
 
     def __post_init__(self):
+        # Валидация id
         if not isinstance(self.id, int) or self.id < 1:
             raise ValueError(
                 "ID книги должно быть целым положительным числом."
             )
 
+        # Валидация title
         self.title = self.validate_non_empty_string("title", self.title)
 
+        # Валидация author
         self.author = self.validate_non_empty_string("author", self.author)
 
+        # Валидация year
         if not isinstance(self.year, int) or self.year > date.today().year:
             raise ValueError(
                 "Год издания должен быть целым числом и не больше текущего года."
             )
 
+        # Валидация status
         if self.status not in (s.value for s in Status):
             raise ValueError(
                 "Статус книги должен быть одним из: "
@@ -48,18 +53,28 @@ class Book:
             f"status: {self.status}"
         )
 
-    def to_dict(self):
+    def __eq__(self, other):
+        """Метод сравнения объектов по полям title, author, year."""
+        if not isinstance(other, Book):
+            return NotImplemented
+        return (
+            self.title.lower() == other.title.lower()
+            and self.author.lower() == other.author.lower()
+            and self.year == other.year
+        )
+
+    def to_dict(self) -> dict[str, str | int]:
         """Преобразование объекта в словарь."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, str | int]):
+    def from_dict(cls, data: dict[str, str | int]) -> "Book":
         """Классовый метод для создания объекта из словаря."""
         return cls(
-            id=data["id"],
-            title=data["title"],
-            author=data["author"],
-            year=data["year"],
+            id=data.get("id", 0),
+            title=data.get("title", ""),
+            author=data.get("author", ""),
+            year=data.get("year", date.today().year),
             status=data.get("status", Status.AVAILABLE.value),
         )
 
