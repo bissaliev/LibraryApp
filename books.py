@@ -12,6 +12,8 @@ class Status(Enum):
 
 @dataclass
 class Book:
+    """Класс книг."""
+
     id: int = field(compare=False)
     title: str
     author: str
@@ -34,7 +36,7 @@ class Book:
         # Валидация year
         if not isinstance(self.year, int) or self.year > date.today().year:
             raise ValueError(
-                "Год издания должен быть целым числом и не больше текущего года."
+                "Год должен быть целым числом и не больше текущего года."
             )
 
         # Валидация status
