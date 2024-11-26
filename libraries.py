@@ -1,8 +1,10 @@
-from books import Book
+from books import Book, Status
 from filemanagers import FileManager
 
 
 class LibraryManager:
+    """Менеджер книг."""
+
     search_fields: tuple[str] = ("title", "author", "year")
 
     def __init__(self, book_class: type[Book], file_manager: FileManager):
@@ -39,8 +41,6 @@ class LibraryManager:
 
     def add_book(self, title: str, author: str, year: int) -> Book:
         """Добавляет новую книгу в библиотеку."""
-        # TODO: Проверка что нового id нет в библиотеке
-        # TODO: Проверка на равенство
         try:
             new_book = self.book_class(
                 id=self._next_id,
@@ -48,6 +48,10 @@ class LibraryManager:
                 author=author,
                 year=year,
             )
+            if new_book.id in self._books:
+                raise ValueError(
+                    f"Книга с id {new_book.id} уже существует в библиотеке."
+                )
         except ValueError as error:
             raise ValueError(str(error)) from error
         for book in self._books.values():
@@ -71,6 +75,8 @@ class LibraryManager:
         updated_book = self._books.get(id)
         if not updated_book:
             raise ValueError(f"Книга с id `{id}` не найдена.")
+        if new_status not in Status:
+            raise ValueError(f"Статус `{new_status}` не поддерживается.")
         updated_book.status = new_status
         self._save_books()
         return updated_book
