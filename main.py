@@ -16,10 +16,6 @@ menu_items: dict[str, str] = {
 }
 
 
-def display_output(msg: str) -> None:
-    print(msg)
-
-
 def display_menu() -> None:
     """Отображение меню."""
     print("\n" + "-" * 30)
@@ -43,30 +39,31 @@ def get_input(prompt: str) -> str:
 
 def display_books(library: LibraryManager) -> None:
     """Отображение всех книг."""
-    books = library.get_books()
+    books: list[Book] = library.get_books()
     if not books:
         print("\nВ библиотеке пока нет книг.\n")
-    print("\n\n".join(str(book) for book in books))
+    else:
+        print("\n\n".join(str(book) for book in books))
 
 
 def display_book_by_id(library: LibraryManager) -> None:
     """Отображение книги по ID."""
     try:
         book_id = get_int_input("Введите ID нужной книги: ")
-        book = library.get_book(book_id)
+        book: Book = library.get_book(book_id)
         print(f"\nНайдена книга:\n{book}\n")
     except ValueError as error:
         print(f"\nОшибка: {error}\n")
 
 
 def add_book(library: LibraryManager) -> None:
-    """Добавление книги в библиотеку."""
+    """Добавление новой книги в библиотеку."""
     title = get_input("Введите заголовок книги: ")
     author = get_input("Введите автора книги: ")
     try:
         year = get_int_input("Введите год публикации книги: ")
-        book = library.add_book(title, author, year)
-        print(f"\nДобавлена новая книга в библиотеку:\n{book}\n")
+        new_book: Book = library.add_book(title, author, year)
+        print(f"\nДобавлена новая книга в библиотеку:\n{new_book}\n")
     except ValueError as error:
         print(f"\nОшибка: {error}\n")
 
@@ -75,7 +72,7 @@ def delete_book(library: LibraryManager) -> None:
     """Удаление книги по ID."""
     try:
         book_id = get_int_input("Введите id книги которую хотите удалить: ")
-        remote_book = library.delete_book(book_id)
+        remote_book: Book = library.delete_book(book_id)
         print(f"\nКнига удалена:\n{remote_book}\n")
     except ValueError as error:
         print(f"\nОшибка: {error}\n")
@@ -91,7 +88,7 @@ def update_status_of_book(library: LibraryManager) -> None:
             new_status = list(Status)[option].value
         except IndexError as error:
             raise ValueError("Выбран неверный вариант.") from error
-        updated_book = library.update_book_status(book_id, new_status)
+        updated_book: Book = library.update_book_status(book_id, new_status)
         print(f"\nСтатус книги изменен:\n{updated_book}\n")
     except ValueError as error:
         print(f"\nОшибка: {error}\n")
@@ -100,17 +97,18 @@ def update_status_of_book(library: LibraryManager) -> None:
 def search_book(library: LibraryManager) -> None:
     """Поиск книг по названию, автору и году."""
     search_fields = dict(enumerate(library.search_fields, 1))
-    print(search_fields)
     print("\n".join(f"{num}. {field}" for num, field in search_fields.items()))
-    option = get_input("Введите номер поля по которому нужно найти книгу: ")
-    field = search_fields.get(option)
     try:
+        option = get_int_input(
+            "Введите номер поля по которому нужно найти книгу: "
+        )
+        field = search_fields.get(option)
         if field:
             prompt = f"Введите значение для поиска в поле {field}: "
             query = (
                 get_int_input(prompt) if field == "year" else get_input(prompt)
             )
-            books = library.search_book(field, query)
+            books: list[Book] = library.search_book(field, query)
             print(f"\nПо вашему запросу найдено {len(books)} совпадений:\n")
             print("\n\n".join(str(book) for book in books))
         else:
@@ -129,7 +127,8 @@ actions: dict[str, Callable[[LibraryManager], None]] = {
 }
 
 
-if __name__ == "__main__":
+def main():
+    """Точка входа."""
     try:
         file_manager = JsonFileManager("library.json")
         library = LibraryManager(Book, file_manager)
@@ -155,3 +154,7 @@ if __name__ == "__main__":
         print(f"Произошла неизвестная ошибка: {error}")
     finally:
         print("Программа завершена")
+
+
+if __name__ == "__main__":
+    main()
