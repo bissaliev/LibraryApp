@@ -64,7 +64,7 @@ class LibraryManager:
 
     def delete_book(self, id: int) -> Book:
         """Удаляет книгу по ID."""
-        deleted_book = self._books.pop(id)
+        deleted_book = self._books.pop(id, None)
         if not deleted_book:
             raise ValueError(f"Книга с id `{id}` не найдена.")
         self._save_books()
