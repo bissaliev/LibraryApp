@@ -45,7 +45,7 @@ class TestLibraryManager(TestCase):
         self.file_path.unlink(missing_ok=True)
 
     def test_get_books(self):
-        """Тест получения всех книг."""
+        """Тест: Получение всех книг."""
         books = self.library_manager.get_books()
         self.assertIsInstance(books, list)
         self.assertEqual(len(books), len(self.sample_data))
@@ -57,7 +57,7 @@ class TestLibraryManager(TestCase):
                 self.assertEqual(getattr(first_book, field), expected)
 
     def test_get_book_by_id(self):
-        """Тест получения книги по id."""
+        """Тест: Получение книги по id."""
         data = self.sample_data[0]
         book = self.library_manager.get_book(data["id"])
         self.assertIsInstance(book, Book)
@@ -67,7 +67,7 @@ class TestLibraryManager(TestCase):
 
     def test_get_book_for_non_existent_id(self):
         """
-        Тест получения книги по несуществующему id
+        Тест: Получение книги по несуществующему id
         возвращает исключение ValueError.
         """
         non_existent_id = 10
@@ -75,7 +75,7 @@ class TestLibraryManager(TestCase):
             self.library_manager.get_book(non_existent_id)
 
     def test_add_book(self):
-        """Тест добавления книги."""
+        """Тест: Добавление книги."""
         new_data = {
             "title": "New book",
             "author": "Author",
@@ -94,7 +94,7 @@ class TestLibraryManager(TestCase):
 
     def test_add_book_with_incorrect_data(self):
         """
-        Тест добавления книги с некорректными данными
+        Тест: Добавление книги с некорректными данными
         вызывает исключение ValueError.
         """
         incorrect_data = (
@@ -106,8 +106,17 @@ class TestLibraryManager(TestCase):
             with self.assertRaises(ValueError):
                 self.library_manager.add_book(**data)
 
+    def test_add_existent_book(self):
+        """
+        Тест: Добавление существующей книги вызывает исключение ValueError.
+        """
+        data = self.sample_data[0]
+        title, author, year = data["title"], data["author"], data["year"]
+        with self.assertRaises(ValueError):
+            self.library_manager.add_book(title, author, year)
+
     def test_delete_book(self):
-        """Тест удаления книги по id."""
+        """Тест: Удаление книги по id."""
         all_books = self.library_manager.get_books()
         count_before_deletion = len(all_books)
         first_book_id = all_books[0].id
@@ -118,7 +127,7 @@ class TestLibraryManager(TestCase):
 
     def test_delete_book_for_non_existent_id(self):
         """
-        Тест удаление книги по несуществующему id
+        Тест: Удаление книги по несуществующему id
         возвращает исключение ValueError.
         """
         non_existent_id = 10
@@ -126,7 +135,7 @@ class TestLibraryManager(TestCase):
             self.library_manager.get_book(non_existent_id)
 
     def test_update_status_of_book(self):
-        """Тест обновления статуса книги."""
+        """Тест: Обновление статуса книги."""
         book_before_update = self.library_manager.get_books()[0]
         status_before_update = book_before_update.status
         updated_book = self.library_manager.update_book_status(
@@ -141,7 +150,7 @@ class TestLibraryManager(TestCase):
 
     def test_update_status_of_book_with_incorrect_status(self):
         """
-        Тест обновления статуса книги с некорректным статусом
+        Тест: Обновление статуса книги с некорректным статусом
         вызывает исключение ValueError.
         """
         incorrect_status = "incorrect_status"
@@ -153,7 +162,7 @@ class TestLibraryManager(TestCase):
 
     def test_update_status_of_book_for_non_existent_id(self):
         """
-        Тест обновление книги по несуществующему id
+        Тест: Обновление книги по несуществующему id
         возвращает исключение ValueError.
         """
         non_existent_id = 10
@@ -161,7 +170,7 @@ class TestLibraryManager(TestCase):
             self.library_manager.get_book(non_existent_id)
 
     def test_search_book(self):
-        """Тест поиска книг по полям title, author, year."""
+        """Тест: Поиск книг по полям title, author, year."""
         search_fields = self.library_manager.search_fields
         search_data = self.sample_data[0]
 
