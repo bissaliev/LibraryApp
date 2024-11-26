@@ -51,19 +51,28 @@ class TestLibraryManager(TestCase):
         self.assertEqual(len(books), len(self.sample_data))
         first_book = books[0]
         self.assertIsInstance(first_book, Book)
-        data = self.sample_data[0]
-        for key, value in data.items():
-            with self.subTest(field=key):
-                self.assertEqual(getattr(first_book, key), value)
+        expected_data = self.sample_data[0]
+        for field, expected in expected_data.items():
+            with self.subTest(field=field):
+                self.assertEqual(getattr(first_book, field), expected)
 
     def test_get_book_by_id(self):
         """Тест получения книги по id."""
         data = self.sample_data[0]
         book = self.library_manager.get_book(data["id"])
         self.assertIsInstance(book, Book)
-        for key, value in data.items():
-            with self.subTest(field=key):
-                self.assertEqual(getattr(book, key), value)
+        for field, expected in data.items():
+            with self.subTest(field=field):
+                self.assertEqual(getattr(book, field), expected)
+
+    def test_get_book_for_non_existent_id(self):
+        """
+        Тест получения книги по несуществующему id
+        возвращает исключение ValueError.
+        """
+        non_existent_id = 10
+        with self.assertRaises(ValueError):
+            self.library_manager.get_book(non_existent_id)
 
     def test_add_book(self):
         """Тест добавления книги."""
@@ -83,6 +92,20 @@ class TestLibraryManager(TestCase):
         self.assertEqual(count_after_adding, count_before_adding + 1)
         self.assertIn(added_book, all_books)
 
+    def test_add_book_with_incorrect_data(self):
+        """
+        Тест добавления книги с некорректными данными
+        вызывает исключение ValueError.
+        """
+        incorrect_data = (
+            {"title": 1, "author": "Author", "year": 2000},
+            {"title": "New book", "author": 1, "year": 2000},
+            {"title": "New book", "author": "Author", "year": "2000"},
+        )
+        for data in incorrect_data:
+            with self.assertRaises(ValueError):
+                self.library_manager.add_book(**data)
+
     def test_delete_book(self):
         """Тест удаления книги по id."""
         all_books = self.library_manager.get_books()
@@ -92,6 +115,15 @@ class TestLibraryManager(TestCase):
         self.assertIsInstance(deleted_book, Book)
         count_after_deletion = len(self.library_manager.get_books())
         self.assertEqual(count_after_deletion, count_before_deletion - 1)
+
+    def test_delete_book_for_non_existent_id(self):
+        """
+        Тест удаление книги по несуществующему id
+        возвращает исключение ValueError.
+        """
+        non_existent_id = 10
+        with self.assertRaises(ValueError):
+            self.library_manager.get_book(non_existent_id)
 
     def test_update_status_of_book(self):
         """Тест обновления статуса книги."""
@@ -107,19 +139,45 @@ class TestLibraryManager(TestCase):
         self.assertNotEqual(status_before_update, book_after_update.status)
         self.assertEqual(book_after_update.status, Status.BORROWED.value)
 
+    def test_update_status_of_book_with_incorrect_status(self):
+        """
+        Тест обновления статуса книги с некорректным статусом
+        вызывает исключение ValueError.
+        """
+        incorrect_status = "incorrect_status"
+        book_to_update = self.library_manager.get_books()[0]
+        with self.assertRaises(ValueError):
+            self.library_manager.update_book_status(
+                book_to_update.id, incorrect_status
+            )
+
+    def test_update_status_of_book_for_non_existent_id(self):
+        """
+        Тест обновление книги по несуществующему id
+        возвращает исключение ValueError.
+        """
+        non_existent_id = 10
+        with self.assertRaises(ValueError):
+            self.library_manager.get_book(non_existent_id)
+
     def test_search_book(self):
         """Тест поиска книг по полям title, author, year."""
-        search_fields = ("title", "author", "year")
+        search_fields = self.library_manager.search_fields
         search_data = self.sample_data[0]
-        search_parameters = (
-            search_data["title"],
-            search_data["author"],
-            search_data["year"],
-        )
-        for field, param in zip(search_fields, search_parameters):
+
+        for field in search_fields:
             with self.subTest(field=field):
-                search_result = self.library_manager.search_book(field, param)
+                search_query = search_data.get(field)
+                search_result = self.library_manager.search_book(
+                    field, search_query
+                )
                 self.assertIsInstance(search_result, list)
                 self.assertEqual(len(search_result), 1)
                 first_book = search_result[0]
+                self.assertIsInstance(first_book, Book)
                 self.assertEqual(first_book.title, search_data["title"])
+
+    def test_search_invalid_field(self):
+        """Тест: Поиск по недопустимому полю выбрасывает исключение."""
+        with self.assertRaises(ValueError):
+            self.library_manager.search_book("invalid_field", "test")
