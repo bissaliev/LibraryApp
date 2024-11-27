@@ -64,7 +64,7 @@ class CSVFileManager(FileManager):
                 csv_reader = csv.DictReader(file, delimiter=self.delimiter)
                 for row in csv_reader:
                     for key, value in row.items():
-                        if value.isdigit() and key in ("id", "year"):
+                        if value.isdigit():
                             row[key] = int(value)
                     data.append(row)
             except csv.Error as e:

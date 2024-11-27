@@ -74,8 +74,8 @@ class Book:
         """Классовый метод для создания объекта из словаря."""
         return cls(
             id=data.get("id", 0),
-            title=data.get("title", ""),
-            author=data.get("author", ""),
+            title=str(data.get("title", "")),
+            author=str(data.get("author", "")),
             year=data.get("year", date.today().year),
             status=data.get("status", Status.AVAILABLE.value),
         )
